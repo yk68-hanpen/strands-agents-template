@@ -98,15 +98,16 @@ docker build -t simple-agent .
 docker run --env-file .env simple-agent
 ```
 
-### 3. GitHub Actionsの設定
+### 3. GitHub Actionsの設定（オプション）
 
-リポジトリのSecretsに以下を設定：
+GitHub Actionsを使用する場合、リポジトリのSecretsに以下を設定：
 
 - `AWS_REGION`
 - `AWS_ACCESS_KEY_ID`
 - `AWS_SECRET_ACCESS_KEY`
 - `MODEL_ID`
-- `GITHUB_TOKEN`（自動的に利用可能）
+
+設定方法: Settings → Secrets and variables → Actions → New repository secret
 
 ## 使い方
 
@@ -125,22 +126,42 @@ python src/main.py "こんにちは！今何時ですか？また、10 * 25 を�
 
 ### GitHub Actionsでの自動実行
 
-#### 1. Issueトリガー
+#### 1. 必要な設定
 
-`agent-request`ラベルを付けたIssueを作成すると、Issueの内容をプロンプトとしてエージェントを実行します。
+リポジトリの Settings → Secrets and variables → Actions で以下のSecretsを設定：
 
-#### 2. PRトリガー
+- `AWS_REGION` (例: `us-east-1`)
+- `AWS_ACCESS_KEY_ID`
+- `AWS_SECRET_ACCESS_KEY`
+- `MODEL_ID` (例: `us.anthropic.claude-sonnet-4-20250514-v1:0`)
 
-PRを作成すると、変更内容を分析してコメントを投稿します（カスタマイズ可能）。
+#### 2. Issueトリガー
 
-#### 3. 定期実行
+**使い方:**
+1. 新しいIssueを作成
+2. `agent-request`ラベルを付ける
+3. Issue本文にエージェントへのプロンプトを記載
 
-毎週月曜日の9:00 (UTC)に自動的にエージェントを実行します。手動実行も可能です。
-
-```bash
-# GitHub UIから手動実行
-Actions → Scheduled Agent → Run workflow
+**例:**
 ```
+こんにちは！今何時ですか？また、15 * 8 を計算してください。
+```
+
+エージェントが実行され、結果がIssueにコメントされます。
+
+#### 3. PRトリガー
+
+PRを作成すると、変更内容を分析してコメントを投稿します。
+
+#### 4. 定期実行
+
+**自動実行:** 毎週月曜日の9:00 (UTC)に自動実行
+
+**手動実行:**
+1. GitHub → Actions → "Scheduled Agent"
+2. "Run workflow"をクリック
+3. プロンプトを入力（オプション）
+4. "Run workflow"を実行
 
 ## カスタマイズ
 
@@ -207,24 +228,10 @@ Error: 必須の環境変数が設定されていません
 
 → `.env`ファイルを作成し、必要な環境変数を設定してください。
 
-### モデルIDのエラー
-
-```
-ValidationException: Invocation of model ID ... isn't supported
-```
-
-→ `.env`の`MODEL_ID`を正しいInference Profile IDに変更してください：
-```
-MODEL_ID=us.anthropic.claude-sonnet-4-20250514-v1:0
-```
 
 ## ライセンス
 
 MIT License
-
-## 貢献
-
-プルリクエストを歓迎します！
 
 ## サポート
 

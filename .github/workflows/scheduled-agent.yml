@@ -6,13 +6,13 @@ on:
     - cron: '0 9 * * 1'
   workflow_dispatch:
     inputs:
-      topic:
-        description: '記事のトピック'
+      prompt:
+        description: 'エージェントへのプロンプト'
         required: false
-        default: 'AWS最新アップデート'
+        default: 'こんにちは！今何時ですか？'
 
 jobs:
-  generate-weekly-article:
+  run-scheduled-agent:
     runs-on: ubuntu-latest
     
     steps:
@@ -22,7 +22,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.14'
+          python-version: '3.11'
       
       - name: Install dependencies
         run: |
@@ -34,37 +34,19 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           MODEL_ID: ${{ secrets.MODEL_ID }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          TOPIC="${{ github.event.inputs.topic || 'AWS最新アップデート' }}"
-          python src/main.py "$TOPIC"
+          PROMPT="${{ github.event.inputs.prompt || 'こんにちは！今何時ですか？' }}"
+          python src/main.py "$PROMPT"
       
-      - name: Upload generated article
-        uses: actions/upload-artifact@v4
-        with:
-          name: weekly-article
-          path: output/*.md
-      
-      - name: Create issue with article
+      - name: Create issue with result
         uses: actions/github-script@v7
         with:
           script: |
-            const fs = require('fs');
-            const path = require('path');
-            
-            // 生成された記事を読み込み
-            const outputDir = 'output';
-            const files = fs.readdirSync(outputDir).filter(f => f.endsWith('.md'));
-            
-            if (files.length > 0) {
-              const articlePath = path.join(outputDir, files[0]);
-              const content = fs.readFileSync(articlePath, 'utf8');
-              
-              github.rest.issues.create({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                title: `📝 週次記事: ${files[0].replace('.md', '')}`,
-                body: content,
-                labels: ['automated', 'tech-article']
-              });
-            }
+            const date = new Date().toISOString().split('T')[0];
+            github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `🤖 定期実行結果: ${date}`,
+              body: 'エージェントが正常に実行されました。詳細はActionsログを確認してください。',
+              labels: ['automated', 'scheduled']
+            });
